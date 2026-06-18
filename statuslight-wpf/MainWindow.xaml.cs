@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -24,10 +24,10 @@ namespace StatusLight
         // Win32 API
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
-        
+
         [DllImport("user32.dll")]
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-        
+
         private const int SW_RESTORE = 9;
 
         private AppConfig _config = null!;
@@ -59,13 +59,11 @@ namespace StatusLight
         {
             _config = AppConfig.Load();
             BackgroundBrush.Opacity = _config.BackgroundOpacity;
-            
+
             Width = 260;
             Height = 52;
-            
-            // 检测终端环境
+
             DetectTerminal();
-            
             ResetPosition();
             StartHttpServer();
             StartAnimation();
@@ -76,13 +74,12 @@ namespace StatusLight
         {
             _terminalProgram = Environment.GetEnvironmentVariable("TERM_PROGRAM");
             var ppid = Environment.GetEnvironmentVariable("PPID");
-            
+
             if (int.TryParse(ppid, out var pid))
             {
                 _parentProcessId = pid;
             }
-            
-            // 如果没有 PPID，尝试获取父进程
+
             if (_parentProcessId == null)
             {
                 try
@@ -101,7 +98,7 @@ namespace StatusLight
                 using var process = Process.GetProcessById(processId);
                 var pbi = new PROCESS_BASIC_INFORMATION();
                 int returnLength;
-                
+
                 if (NtQueryInformationProcess(process.Handle, 0, ref pbi, Marshal.SizeOf(pbi), out returnLength) == 0)
                 {
                     return (int)pbi.InheritedFromUniqueProcessId;
@@ -129,7 +126,6 @@ namespace StatusLight
         {
             try
             {
-                // 优先使用 PPID 找到父进程
                 if (_parentProcessId != null)
                 {
                     try
@@ -142,7 +138,6 @@ namespace StatusLight
                     catch { }
                 }
 
-                // 根据 TERM_PROGRAM 查找进程
                 if (!string.IsNullOrEmpty(_terminalProgram))
                 {
                     var processName = _terminalProgram.ToLower() switch
@@ -166,7 +161,6 @@ namespace StatusLight
                     }
                 }
 
-                // 默认切换到 cmd 或 powershell
                 var cmdProcess = Process.GetProcessesByName("cmd")
                     .Concat(Process.GetProcessesByName("powershell"))
                     .Concat(Process.GetProcessesByName("WindowsTerminal"))
@@ -210,7 +204,7 @@ namespace StatusLight
                 }
                 catch (ObjectDisposedException) { }
                 catch (HttpListenerException) { }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"HTTP server error: {ex.Message}"); }
+                catch (Exception ex) { Debug.WriteLine($"HTTP server error: {ex.Message}"); }
             }, _cts.Token);
         }
 
@@ -261,6 +255,25 @@ namespace StatusLight
                             _ => Status.Idle
                         };
 
+                        // 从 hook 获取终端信息
+                        if (data.TryGetProperty("terminal", out var terminalProp))
+                        {
+                            var terminal = terminalProp.GetString();
+                            if (!string.IsNullOrEmpty(terminal))
+                            {
+                                _terminalProgram = terminal;
+                            }
+                        }
+
+                        if (data.TryGetProperty("ppid", out var ppidProp))
+                        {
+                            var ppidStr = ppidProp.GetString();
+                            if (int.TryParse(ppidStr, out var ppid) && ppid > 0)
+                            {
+                                _parentProcessId = ppid;
+                            }
+                        }
+
                         Dispatcher.Invoke(() => SetStatus(status));
                     }
 
@@ -272,7 +285,7 @@ namespace StatusLight
                     context.Response.OutputStream.Write(buffer, 0, buffer.Length);
                 }
             }
-            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"HandleRequest error: {ex.Message}"); }
+            catch (Exception ex) { Debug.WriteLine($"HandleRequest error: {ex.Message}"); }
             finally
             {
                 try { context.Response.Close(); } catch { }
@@ -340,47 +353,47 @@ namespace StatusLight
             switch (_currentStatus)
             {
                 case Status.Idle:
-                    SetLight(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, true);
-                    SetLight(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
-                    SetLight(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, false);
+                    SetLight(GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, true);
+                    SetLight(YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
+                    SetLight(RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, false);
                     StatusTextH.Text = "Ready";
                     break;
 
                 case Status.Completed:
                     double breathIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-                    SetLightBreath(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, breathIntensity);
-                    SetLight(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
-                    SetLight(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, false);
+                    SetLightBreath(GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, breathIntensity);
+                    SetLight(YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
+                    SetLight(RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, false);
                     StatusTextH.Text = "Done";
                     break;
 
                 case Status.Working:
                     // 跑马灯 + 呼吸效果
                     double marqueeIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-                    SetLightBreath(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, _marqueeIndex == 0 ? marqueeIntensity : 0);
-                    SetLightBreath(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, _marqueeIndex == 1 ? marqueeIntensity : 0);
-                    SetLightBreath(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, _marqueeIndex == 2 ? marqueeIntensity : 0);
+                    SetLightBreath(GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, _marqueeIndex == 0 ? marqueeIntensity : 0);
+                    SetLightBreath(YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, _marqueeIndex == 1 ? marqueeIntensity : 0);
+                    SetLightBreath(RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, _marqueeIndex == 2 ? marqueeIntensity : 0);
                     StatusTextH.Text = "Working";
                     break;
 
                 case Status.Waiting:
-                    SetLight(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, _blinkState);
-                    SetLight(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, _blinkState);
-                    SetLight(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, _blinkState);
+                    SetLight(GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, _blinkState);
+                    SetLight(YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, _blinkState);
+                    SetLight(RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, _blinkState);
                     StatusTextH.Text = "Waiting";
                     break;
 
                 case Status.Error:
                     double errorIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-                    SetLight(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, false);
-                    SetLight(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
-                    SetLightBreath(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, errorIntensity);
+                    SetLight(GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, false);
+                    SetLight(YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
+                    SetLightBreath(RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, errorIntensity);
                     StatusTextH.Text = "Error";
                     break;
             }
         }
 
-        private void SetLight(System.Windows.Shapes.Ellipse light, GradientStop inner, GradientStop outer,
+        private void SetLight(GradientStop inner, GradientStop outer,
             System.Windows.Media.Effects.DropShadowEffect glow,
             Color onColor, Color glowColor, bool isOn)
         {
@@ -401,7 +414,7 @@ namespace StatusLight
             }
         }
 
-        private void SetLightBreath(System.Windows.Shapes.Ellipse light, GradientStop inner, GradientStop outer,
+        private void SetLightBreath(GradientStop inner, GradientStop outer,
             System.Windows.Media.Effects.DropShadowEffect glow,
             Color onColor, Color glowColor, double intensity)
         {
@@ -439,10 +452,10 @@ namespace StatusLight
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             var settings = new SettingsWindow(
-                _config.MarqueeOnTime, _config.MarqueeOffTime, 
+                _config.MarqueeOnTime, _config.MarqueeOffTime,
                 _config.BlinkOnTime, _config.BlinkOffTime,
                 _config.BackgroundOpacity, _config.Port);
-            
+
             settings.Owner = this;
             if (settings.ShowDialog() == true)
             {
@@ -451,15 +464,15 @@ namespace StatusLight
                 _config.BlinkOnTime = settings.BlinkOn;
                 _config.BlinkOffTime = settings.BlinkOff;
                 _config.BackgroundOpacity = settings.BackgroundOpacity;
-                
+
                 BackgroundBrush.Opacity = _config.BackgroundOpacity;
-                
+
                 if (_config.Port != settings.Port)
                 {
                     _config.Port = settings.Port;
                     RestartHttpServer();
                 }
-                
+
                 _config.Save();
                 StartAnimation();
             }

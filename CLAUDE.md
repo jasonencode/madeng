@@ -4,11 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MD-Light (码灯/牛马指示灯) is a screen-top status indicator light for Claude Code. It displays the current working state of Claude Code through visual LED-like indicators. The project provides three independent implementations:
+MD-Light (码灯/牛马指示灯) is a screen-top status indicator light for Claude Code. It displays the current working state of Claude Code through visual LED-like indicators. The project provides two independent implementations:
 
 - **statuslight-wpf** - Windows WPF version (.NET 8.0)
 - **statuslight-python** - Python version (tkinter, cross-platform)
-- **statuslight-go** - Go version (Fyne GUI, cross-platform)
 
 ## Architecture
 
@@ -27,7 +26,7 @@ All implementations follow the same architecture:
 | `working` | Marquee breathing | Processing |
 | `completed` | Green breathing | Task done |
 | `waiting` | All 3 blinking | Awaiting permission |
-| `error` | Red solid | Error occurred |
+| `error` | Red breathing | Error occurred |
 
 ## Build Commands
 
@@ -58,18 +57,6 @@ pip install -r requirements.txt
 python claude_status_light.py
 ```
 
-### Go Version
-
-```bash
-cd statuslight-go
-
-# Build
-go build -o statuslight .
-
-# Run
-./statuslight
-```
-
 ## Key Implementation Details
 
 ### WPF Version
@@ -83,12 +70,6 @@ go build -o statuslight .
 - Transparent window via `overrideredirect(True)` and `-transparentcolor`
 - HTTP server runs in daemon thread
 - Animation via `root.after()` callback loop
-
-### Go Version
-- Uses Fyne v2 GUI toolkit
-- HTTP server via standard `net/http` package
-- Animation via goroutine with `time.Ticker`
-- Thread-safe status updates with `sync.Mutex`
 
 ## Configuration
 

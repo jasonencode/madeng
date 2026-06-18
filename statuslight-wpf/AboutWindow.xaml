@@ -40,7 +40,7 @@
                     <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#FACC15">●</Run> Working - 跑马灯呼吸，工作中</TextBlock>
                     <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#22C55E">●</Run> Done (completed) - 绿灯呼吸，任务完成</TextBlock>
                     <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#FACC15">●</Run> Waiting - 三灯闪烁，等待授权</TextBlock>
-                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#EF4444">●</Run> Error - 红灯常亮，出现错误</TextBlock>
+                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#EF4444">●</Run> Error - 红灯呼吸，出现错误</TextBlock>
                 </StackPanel>
             </StackPanel>
             

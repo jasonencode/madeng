@@ -6,8 +6,7 @@
 
 ```
 ├── statuslight-wpf/       # WPF 版本 (Windows)
-├── statuslight-python/    # Python 版本 (跨平台)
-└── statuslight-go/        # Go 版本 (跨平台)
+└── statuslight-python/    # Python 版本 (跨平台)
 ```
 
 ## 状态说明
@@ -18,7 +17,7 @@
 | `working` | 跑马灯呼吸 | 工作中 |
 | `completed` | 绿灯呼吸 | 任务完成 |
 | `waiting` | 三灯闪烁 | 等待授权 |
-| `error` | 红灯常亮 | 出现错误 |
+| `error` | 红灯呼吸 | 出现错误 |
 
 ## 运行要求
 

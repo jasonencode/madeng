@@ -15,7 +15,7 @@
 | `working` | 跑马灯呼吸 | 工作中 |
 | `completed` | 绿灯呼吸 | 任务完成 |
 | `waiting` | 三灯闪烁 | 等待授权 |
-| `error` | 红灯常亮 | 出现错误 |
+| `error` | 红灯呼吸 | 出现错误 |
 
 ## 编译运行
 
@@ -173,8 +173,8 @@ dotnet publish StatusLight.csproj -c Release -r win-x64 --self-contained true -p
 | `UserPromptSubmit` | 用户提交提示 | 跑马灯 (working) |
 | `PostToolUse` | 工具使用后 | 跑马灯 (working) |
 | `Stop` | Claude 完成响应 | 绿灯呼吸 (completed) |
-| `StopFailure` | 响应失败 | 红灯常亮 (error) |
-| `PostToolUseFailure` | 工具失败 | 红灯常亮 (error) |
+| `StopFailure` | 响应失败 | 红灯呼吸 (error) |
+| `PostToolUseFailure` | 工具失败 | 红灯呼吸 (error) |
 | `PermissionRequest` | 权限请求弹窗 | 三灯闪烁 (waiting) |
 | `PermissionDenied` | 权限拒绝 | 绿灯常亮 (idle) |
 | `SessionEnd` | 会话结束 | 绿灯常亮 (idle) |
