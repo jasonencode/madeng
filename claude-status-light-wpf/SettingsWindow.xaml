@@ -1,0 +1,129 @@
+<Window x:Class="StatusLight.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="设置" 
+        Width="400" Height="480"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="#E61E1E2E"
+        AllowsTransparency="True"
+        WindowStyle="None">
+    
+    <Border CornerRadius="12" Background="#F01E1E2E" BorderBrush="#313244" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="12" ShadowDepth="4" Color="#000000" Opacity="0.4"/>
+        </Border.Effect>
+        
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- 标题 -->
+            <TextBlock Grid.Row="0" Text="设置" Foreground="#E0E0E0" FontSize="18" FontWeight="Bold" Margin="0,0,0,16"/>
+            
+            <!-- 外观配置 -->
+            <TextBlock Grid.Row="1" Text="外观" Foreground="#8888FF" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+            
+            <Grid Grid.Row="2" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="背景透明度:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
+                <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.1" Maximum="1" Value="0.6" 
+                        TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center"/>
+                <TextBlock x:Name="OpacityValue" Grid.Column="2" Text="60%" Foreground="#A0A0B0" 
+                           VerticalAlignment="Center" TextAlignment="Right"/>
+            </Grid>
+            
+            <!-- 跑马灯配置 -->
+            <TextBlock Grid.Row="3" Text="跑马灯" Foreground="#8888FF" FontSize="13" FontWeight="SemiBold" Margin="0,16,0,8"/>
+            
+            <Grid Grid.Row="4" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="每个灯亮时间:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
+                <TextBox x:Name="MarqueeOnTime" Grid.Column="1" Text="500" Background="#2A2A3C" Foreground="#E0E0E0" 
+                         BorderBrush="#3A3A4C" Padding="6,4" FontSize="13"/>
+                <TextBlock Grid.Column="2" Text="ms" Foreground="#A0A0B0" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+            
+            <Grid Grid.Row="5" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="循环间隔:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
+                <TextBox x:Name="MarqueeOffTime" Grid.Column="1" Text="200" Background="#2A2A3C" Foreground="#E0E0E0" 
+                         BorderBrush="#3A3A4C" Padding="6,4" FontSize="13"/>
+                <TextBlock Grid.Column="2" Text="ms" Foreground="#A0A0B0" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+            
+            <!-- 闪烁配置 -->
+            <TextBlock Grid.Row="6" Text="闪烁" Foreground="#8888FF" FontSize="13" FontWeight="SemiBold" Margin="0,16,0,8"/>
+            
+            <Grid Grid.Row="7" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="亮灯时间:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
+                <TextBox x:Name="BlinkOnTime" Grid.Column="1" Text="600" Background="#2A2A3C" Foreground="#E0E0E0" 
+                         BorderBrush="#3A3A4C" Padding="6,4" FontSize="13"/>
+                <TextBlock Grid.Column="2" Text="ms" Foreground="#A0A0B0" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+            
+            <Grid Grid.Row="8" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="50"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="灭灯时间:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
+                <TextBox x:Name="BlinkOffTime" Grid.Column="1" Text="400" Background="#2A2A3C" Foreground="#E0E0E0" 
+                         BorderBrush="#3A3A4C" Padding="6,4" FontSize="13"/>
+                <TextBlock Grid.Column="2" Text="ms" Foreground="#A0A0B0" VerticalAlignment="Center" Margin="8,0,0,0"/>
+            </Grid>
+            
+            <!-- 网络配置 -->
+            <TextBlock Grid.Row="9" Text="网络" Foreground="#8888FF" FontSize="13" FontWeight="SemiBold" Margin="0,16,0,8"/>
+            
+            <Grid Grid.Row="10" Margin="0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="HTTP端口:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
+                <TextBox x:Name="HttpPort" Grid.Column="1" Text="51234" Background="#2A2A3C" Foreground="#E0E0E0" 
+                         BorderBrush="#3A3A4C" Padding="6,4" FontSize="13"/>
+            </Grid>
+            
+            <!-- 按钮 -->
+            <StackPanel Grid.Row="12" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+                <Button Content="确定" Click="Ok_Click" Width="80" Height="32" Margin="0,0,10,0" 
+                        Background="#4A4A6C" Foreground="#E0E0E0" BorderBrush="#5A5A7C" FontSize="13"/>
+                <Button Content="取消" Click="Cancel_Click" Width="80" Height="32" 
+                        Background="#3A3A4C" Foreground="#E0E0E0" BorderBrush="#4A4A5C" FontSize="13"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

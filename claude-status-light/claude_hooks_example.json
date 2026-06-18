@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "on_start": [
+      {
+        "type": "command",
+        "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"working\"}'"
+      }
+    ],
+    "on_stop": [
+      {
+        "type": "command",
+        "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"idle\"}'"
+      }
+    ],
+    "on_permission_request": [
+      {
+        "type": "command",
+        "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"waiting\"}'"
+      }
+    ],
+    "on_error": [
+      {
+        "type": "command",
+        "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"error\"}'"
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "MarqueeOnTime": 500,
+  "MarqueeOffTime": 200,
+  "BlinkOnTime": 600,
+  "BlinkOffTime": 400,
+  "BreathCycleTime": 3000,
+  "Port": 51234,
+  "BackgroundOpacity": 0.6
+}

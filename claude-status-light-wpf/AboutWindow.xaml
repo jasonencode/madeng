@@ -1,0 +1,58 @@
+<Window x:Class="StatusLight.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="关于 StatusLight"
+        Width="420" Height="560"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+    
+    <Border CornerRadius="12" Background="#F01E1E2E" BorderBrush="#313244" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="12" ShadowDepth="4" Color="#000000" Opacity="0.4"/>
+        </Border.Effect>
+        
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,16">
+                <TextBlock Text="StatusLight" FontSize="20" FontWeight="Bold" Foreground="#E0E0E0" HorizontalAlignment="Center"/>
+                <TextBlock Text="v1.2.0" FontSize="12" Foreground="#888" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+            
+            <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#A0A0B0" FontSize="12" Margin="0,0,0,16">
+                屏幕顶部状态指示灯，配合 Claude Code 使用。通过 HTTP 接口接收状态，以三色灯显示工作状态。
+            </TextBlock>
+            
+            <StackPanel Grid.Row="2" Margin="0,0,0,16">
+                <TextBlock Text="状态说明" Foreground="#8888FF" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <StackPanel Margin="10,0,0,0">
+                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#22C55E">●</Run> Ready (idle) - 绿灯常亮，等待输入</TextBlock>
+                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#FACC15">●</Run> Working - 跑马灯呼吸，工作中</TextBlock>
+                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#22C55E">●</Run> Done (completed) - 绿灯呼吸，任务完成</TextBlock>
+                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#FACC15">●</Run> Waiting - 三灯闪烁，等待授权</TextBlock>
+                    <TextBlock Foreground="#A0A0B0" FontSize="12" Margin="0,2"><Run Foreground="#EF4444">●</Run> Error - 红灯常亮，出现错误</TextBlock>
+                </StackPanel>
+            </StackPanel>
+            
+            <TextBlock Grid.Row="3" Text="Claude Code Hooks 配置" Foreground="#8888FF" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,8"/>
+            
+            <TextBox x:Name="HooksTextBox" Grid.Row="4" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                     Background="#1A1A2E" Foreground="#A0D0A0" BorderBrush="#2A2A3C"
+                     FontFamily="Consolas" FontSize="11" Padding="8" Margin="0,0,0,16"/>
+            
+            <Button Grid.Row="5" Content="关闭" Click="Close_Click" Width="80" Height="30" HorizontalAlignment="Center"
+                    Background="#4A4A6C" Foreground="#E0E0E0" BorderBrush="#5A5A7C"/>
+        </Grid>
+    </Border>
+</Window>

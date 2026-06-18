@@ -1,0 +1,81 @@
+﻿<Window x:Class="StatusLight.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="StatusLight" 
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        Width="260" Height="52"
+        SizeToContent="Manual"
+        Loaded="Window_Loaded"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+    
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="设置" Click="Settings_Click"/>
+            <Separator/>
+            <MenuItem Header="恢复Ready状态" Click="ResetStatus_Click"/>
+            <MenuItem Header="还原位置" Click="ResetPosition_Click"/>
+            <Separator/>
+            <MenuItem Header="关于" Click="About_Click"/>
+            <MenuItem Header="退出" Click="Exit_Click"/>
+        </ContextMenu>
+    </Window.ContextMenu>
+    
+    <Border x:Name="MainBorder" CornerRadius="0,0,14,14">
+        <Border.Background>
+            <SolidColorBrush x:Name="BackgroundBrush" Color="#1E1E2E" Opacity="0.6"/>
+        </Border.Background>
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Color="#000000" Opacity="0.3"/>
+        </Border.Effect>
+        
+        <StackPanel x:Name="LightsPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,0">
+            <!-- 绿灯 -->
+            <Ellipse x:Name="GreenLightH" Width="24" Height="24" Margin="8,0">
+                <Ellipse.Effect>
+                    <DropShadowEffect x:Name="GreenGlowH" BlurRadius="0" ShadowDepth="0" Color="#22C55E" Opacity="0"/>
+                </Ellipse.Effect>
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop x:Name="GreenInnerH" Color="#1A1A2E" Offset="0"/>
+                        <GradientStop x:Name="GreenOuterH" Color="#1A1A2E" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            
+            <!-- 黄灯 -->
+            <Ellipse x:Name="YellowLightH" Width="24" Height="24" Margin="8,0">
+                <Ellipse.Effect>
+                    <DropShadowEffect x:Name="YellowGlowH" BlurRadius="0" ShadowDepth="0" Color="#FACC15" Opacity="0"/>
+                </Ellipse.Effect>
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop x:Name="YellowInnerH" Color="#1A1A2E" Offset="0"/>
+                        <GradientStop x:Name="YellowOuterH" Color="#1A1A2E" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            
+            <!-- 红灯 -->
+            <Ellipse x:Name="RedLightH" Width="24" Height="24" Margin="8,0">
+                <Ellipse.Effect>
+                    <DropShadowEffect x:Name="RedGlowH" BlurRadius="0" ShadowDepth="0" Color="#EF4444" Opacity="0"/>
+                </Ellipse.Effect>
+                <Ellipse.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop x:Name="RedInnerH" Color="#1A1A2E" Offset="0"/>
+                        <GradientStop x:Name="RedOuterH" Color="#1A1A2E" Offset="1"/>
+                    </RadialGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            
+            <!-- 状态文字 -->
+            <TextBlock x:Name="StatusTextH" Text="Ready" Foreground="#E0E0E0" 
+                       FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="16,0,0,0"/>
+        </StackPanel>
+    </Border>
+</Window>
