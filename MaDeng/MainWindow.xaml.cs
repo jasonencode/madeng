@@ -14,6 +14,7 @@ namespace MaDeng
     {
         private readonly SessionWatcher _sessionWatcher;
         private readonly ObservableCollection<SessionViewModel> _sessions = new();
+        private readonly Dictionary<string, SessionViewModel> _sessionIndex = new();
         private AppConfig _config = null!;
 
         public MainWindow()
@@ -40,26 +41,29 @@ namespace MaDeng
 
         private void UpdateSessions(List<SessionInfo> sessions)
         {
-            var currentIds = sessions.Select(s => s.SessionId).ToHashSet();
+            var incomingIds = sessions.Select(s => s.SessionId).ToHashSet();
 
             // 移除不存在的 sessions
-            var toRemove = _sessions.Where(s => !currentIds.Contains(s.SessionId)).ToList();
-            foreach (var item in toRemove)
+            var toRemove = _sessionIndex.Keys.Where(id => !incomingIds.Contains(id)).ToList();
+            foreach (var id in toRemove)
             {
-                _sessions.Remove(item);
+                var vm = _sessionIndex[id];
+                _sessionIndex.Remove(id);
+                _sessions.Remove(vm);
             }
 
             // 更新或添加 sessions
             foreach (var session in sessions)
             {
-                var existing = _sessions.FirstOrDefault(s => s.SessionId == session.SessionId);
-                if (existing != null)
+                if (_sessionIndex.TryGetValue(session.SessionId, out var existing))
                 {
                     existing.UpdateFrom(session);
                 }
                 else
                 {
-                    _sessions.Add(SessionViewModel.FromSession(session));
+                    var vm = SessionViewModel.FromSession(session);
+                    _sessionIndex[session.SessionId] = vm;
+                    _sessions.Add(vm);
                 }
             }
         }
@@ -128,7 +132,10 @@ namespace MaDeng
                 {
                     Process.Start("explorer.exe", vm.Cwd);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"OpenCwd failed: {ex.Message}");
+                }
             }
         }
 

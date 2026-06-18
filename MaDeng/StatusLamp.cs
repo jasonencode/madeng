@@ -36,6 +36,11 @@ namespace MaDeng
                 new FrameworkPropertyMetadata(typeof(StatusLamp)));
         }
 
+        public StatusLamp()
+        {
+            Unloaded += (_, _) => StopAnimation();
+        }
+
         public string Status
         {
             get => (string)GetValue(StatusProperty);
@@ -55,7 +60,15 @@ namespace MaDeng
                 lamp._marqueeIndex = 0;
                 lamp._blinkState = true;
                 lamp._breathProgress = 0;
-                lamp.StartAnimation();
+
+                if (lamp.Status == "idle")
+                {
+                    lamp.StopAnimation();
+                }
+                else
+                {
+                    lamp.StartAnimation();
+                }
                 lamp.UpdateDisplay();
             }
         }
@@ -64,7 +77,11 @@ namespace MaDeng
         {
             base.OnApplyTemplate();
             _ellipse = GetTemplateChild("PART_Ellipse") as Ellipse;
-            StartAnimation();
+
+            if (Status != "idle")
+            {
+                StartAnimation();
+            }
             UpdateDisplay();
         }
 
@@ -75,15 +92,16 @@ namespace MaDeng
             _animationTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60fps
             _animationTimer.Tick += (s, e) =>
             {
+                var config = AppConfig.Instance;
                 switch (Status)
                 {
                     case "completed":
-                        _breathProgress += 0.016 / 3.0; // 3s cycle
+                        _breathProgress += 0.016 / (config.BreathCycleTime / 1000.0);
                         if (_breathProgress >= 1) _breathProgress = 0;
                         break;
                     case "working":
                     case "busy":
-                        _breathProgress += 0.016 / 0.5; // 500ms marquee
+                        _breathProgress += 0.016 / (config.MarqueeOnTime / 1000.0);
                         if (_breathProgress >= 1)
                         {
                             _breathProgress = 0;
@@ -91,7 +109,7 @@ namespace MaDeng
                         }
                         break;
                     case "waiting":
-                        _breathProgress += 0.016 / (_blinkState ? 0.6 : 0.4); // 600ms on, 400ms off
+                        _breathProgress += 0.016 / ((_blinkState ? config.BlinkOnTime : config.BlinkOffTime) / 1000.0);
                         if (_breathProgress >= 1)
                         {
                             _breathProgress = 0;
@@ -99,13 +117,19 @@ namespace MaDeng
                         }
                         break;
                     case "error":
-                        _breathProgress += 0.016 / 3.0; // 3s cycle
+                        _breathProgress += 0.016 / (AppConfig.Instance.BreathCycleTime / 1000.0);
                         if (_breathProgress >= 1) _breathProgress = 0;
                         break;
                 }
                 UpdateDisplay();
             };
             _animationTimer.Start();
+        }
+
+        private void StopAnimation()
+        {
+            _animationTimer?.Stop();
+            _animationTimer = null;
         }
 
         private void UpdateDisplay()

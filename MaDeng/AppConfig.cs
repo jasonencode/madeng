@@ -14,6 +14,7 @@ namespace MaDeng
         public double BackgroundOpacity { get; set; } = 0.6;
 
         private static readonly string ConfigPath = GetConfigPath();
+        public static AppConfig Instance { get; private set; } = new AppConfig();
 
         private static string GetConfigPath()
         {
@@ -29,11 +30,15 @@ namespace MaDeng
                 if (File.Exists(ConfigPath))
                 {
                     var json = File.ReadAllText(ConfigPath);
-                    return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                    var config = JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
+                    Instance = config;
+                    return config;
                 }
             }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"AppConfig.Load error: {ex.Message}"); }
-            return new AppConfig();
+            var fallback = new AppConfig();
+            Instance = fallback;
+            return fallback;
         }
 
         public void Save()

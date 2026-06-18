@@ -60,6 +60,7 @@ namespace MaDeng
             Pid = session.Pid;
             Cwd = session.Cwd;
             Status = session.Status;
+            AgentName = session.AgentName;
         }
 
         public static SessionViewModel FromSession(SessionInfo session)
@@ -70,7 +71,7 @@ namespace MaDeng
                 SessionId = session.SessionId,
                 Cwd = session.Cwd,
                 Status = session.Status,
-                AgentName = "Claude"
+                AgentName = session.AgentName
             };
         }
 

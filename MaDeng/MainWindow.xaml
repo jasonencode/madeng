@@ -70,10 +70,10 @@
                 <!-- Agent 名字 -->
                 <TextBlock Text="{Binding AgentName}" Foreground="#8888FF" FontSize="11"
                     FontWeight="SemiBold"
-                    VerticalAlignment="Center" Width="50" TextAlignment="Right" Margin="0,0,6,0" />
+                    VerticalAlignment="Center" Width="45" TextAlignment="Right" Margin="0,0,6,0" />
                 <!-- 状态文字 - 固定宽度 -->
                 <TextBlock Text="{Binding Pid}" Foreground="#E0E0E0" FontSize="11"
-                    VerticalAlignment="Center" Width="50" TextAlignment="Left" Margin="6,0,0,0" />
+                    VerticalAlignment="Center" Width="45" TextAlignment="Left" Margin="6,0,0,0" />
                 <!-- 红绿灯 - 固定宽度 -->
                 <StackPanel Orientation="Horizontal" Width="60" VerticalAlignment="Center">
                     <local:StatusLamp LampIndex="0" Status="{Binding Status}" Width="16" Height="16"
@@ -85,7 +85,7 @@
                 </StackPanel>
                 <!-- 状态文字 - 固定宽度 -->
                 <TextBlock Text="{Binding StatusText}" Foreground="#E0E0E0" FontSize="11"
-                    VerticalAlignment="Center" Width="60" TextAlignment="Left" Margin="6,0,0,0" />
+                    VerticalAlignment="Center" Width="45" TextAlignment="Left" Margin="6,0,0,0" />
                 <!-- 打开目录按钮 - 右侧对齐 -->
                 <Button DockPanel.Dock="Right" Click="OpenCwd_Click" Cursor="Hand"
                     Background="Transparent" BorderThickness="0" Padding="4,2"
