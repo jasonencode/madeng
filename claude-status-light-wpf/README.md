@@ -69,14 +69,115 @@ dotnet publish StatusLight.csproj -c Release -r win-x64 --self-contained true -p
 ```json
 {
   "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"idle\"}'" }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"working\"}'" }] }],
-    "Stop": [{ "hooks": [{ "type": "command", "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"completed\"}'" }] }],
-    "StopFailure": [{ "hooks": [{ "type": "command", "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"error\"}'" }] }],
-    "PermissionRequest": [{ "hooks": [{ "type": "command", "command": "curl -X POST http://127.0.0.1:51234 -H 'Content-Type: application/json' -d '{\"status\": \"waiting\"}'" }] }]
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"idle\\\"}\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"working\\\"}\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"completed\\\"}\""
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"error\\\"}\""
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"waiting\\\"}\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"working\\\"}\""
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"error\\\"}\""
+          }
+        ]
+      }
+    ],
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"idle\\\"}\""
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "curl -X POST http://127.0.0.1:51234 -H \"Content-Type: application/json\" -d \"{\\\"status\\\": \\\"idle\\\"}\""
+          }
+        ]
+      }
+    ]
   }
 }
 ```
+
+**Hook 事件说明：**
+
+| 事件 | 触发时机 | 灯效 |
+|------|----------|------|
+| `SessionStart` | 会话开始 | 绿灯常亮 (idle) |
+| `UserPromptSubmit` | 用户提交提示 | 跑马灯 (working) |
+| `PostToolUse` | 工具使用后 | 跑马灯 (working) |
+| `Stop` | Claude 完成响应 | 绿灯呼吸 (completed) |
+| `StopFailure` | 响应失败 | 红灯常亮 (error) |
+| `PostToolUseFailure` | 工具失败 | 红灯常亮 (error) |
+| `PermissionRequest` | 权限请求弹窗 | 三灯闪烁 (waiting) |
+| `PermissionDenied` | 权限拒绝 | 绿灯常亮 (idle) |
+| `SessionEnd` | 会话结束 | 绿灯常亮 (idle) |
 
 ## 右键菜单
 
