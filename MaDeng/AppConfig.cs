@@ -10,7 +10,6 @@ namespace MaDeng
         public int BlinkOnTime { get; set; } = 600;
         public int BlinkOffTime { get; set; } = 400;
         public int BreathCycleTime { get; set; } = 3000;
-        public int Port { get; set; } = 51234;
         public double BackgroundOpacity { get; set; } = 0.6;
 
         private static readonly string ConfigPath = GetConfigPath();
