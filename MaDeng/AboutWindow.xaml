@@ -9,14 +9,6 @@
         AllowsTransparency="True"
         Background="Transparent">
 
-    <Window.Resources>
-        <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Themes/SharedStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
-        </ResourceDictionary>
-    </Window.Resources>
-
     <Border CornerRadius="12" Background="#F01E1E2E" BorderBrush="#313244" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="12" ShadowDepth="4" Color="#000000" Opacity="0.4"/>
@@ -32,7 +24,8 @@
 
             <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,16">
                 <TextBlock Text="MaDeng" FontSize="20" FontWeight="Bold" Foreground="#E0E0E0" HorizontalAlignment="Center"/>
-                <TextBlock Text="码灯 / 牛马指示灯" FontSize="12" Foreground="#888" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                <TextBlock x:Name="VersionText" FontSize="12" Foreground="#8888FF" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                <TextBlock Text="码灯 / 牛马指示灯" FontSize="12" Foreground="#888" HorizontalAlignment="Center" Margin="0,2,0,0"/>
             </StackPanel>
 
             <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#A0A0B0" FontSize="12" Margin="0,0,0,16">

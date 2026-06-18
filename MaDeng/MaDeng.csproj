@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <AssemblyName>MaDeng</AssemblyName>
     <RootNamespace>MaDeng</RootNamespace>
-    <Version>1.1.0</Version>
-    <AssemblyVersion>1.1.0</AssemblyVersion>
-    <FileVersion>1.1.0</FileVersion>
+    <Version>1.2.0</Version>
+    <AssemblyVersion>1.2.0</AssemblyVersion>
+    <FileVersion>1.2.0</FileVersion>
     <ApplicationIcon>icon.ico</ApplicationIcon>
   </PropertyGroup>
 

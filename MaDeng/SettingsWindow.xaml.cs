@@ -6,23 +6,26 @@ namespace MaDeng
 {
     public partial class SettingsWindow : Window
     {
+        private const int MinTimingValue = 50;
+        private const int MaxTimingValue = 10000;
+
         public int MarqueeOn { get; private set; }
         public int MarqueeOff { get; private set; }
         public int BlinkOn { get; private set; }
         public int BlinkOff { get; private set; }
         public double BackgroundOpacity { get; private set; }
 
-        public SettingsWindow(int marqueeOn, int marqueeOff, int blinkOn, int blinkOff, double opacity)
+        public SettingsWindow(AppConfig config)
         {
             InitializeComponent();
 
-            MarqueeOnTime.Text = marqueeOn.ToString();
-            MarqueeOffTime.Text = marqueeOff.ToString();
-            BlinkOnTime.Text = blinkOn.ToString();
-            BlinkOffTime.Text = blinkOff.ToString();
+            MarqueeOnTime.Text = config.MarqueeOnTime.ToString();
+            MarqueeOffTime.Text = config.MarqueeOffTime.ToString();
+            BlinkOnTime.Text = config.BlinkOnTime.ToString();
+            BlinkOffTime.Text = config.BlinkOffTime.ToString();
 
-            OpacitySlider.Value = opacity;
-            OpacityValue.Text = $"{(int)(opacity * 100)}%";
+            OpacitySlider.Value = config.BackgroundOpacity;
+            OpacityValue.Text = $"{(int)(config.BackgroundOpacity * 100)}%";
 
             OpacitySlider.ValueChanged += OpacitySlider_ValueChanged;
 
@@ -41,7 +44,7 @@ namespace MaDeng
             BlinkOffTime.AddHandler(DataObject.PastingEvent, pasteHandler);
         }
 
-        private static readonly Regex _numericRegex = new Regex("[^0-9]+");
+        private static readonly Regex _numericRegex = new("[^0-9]+", RegexOptions.Compiled);
 
         private void NumericOnly_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -52,8 +55,8 @@ namespace MaDeng
         {
             if (e.DataObject.GetDataPresent(typeof(string)))
             {
-                var text = (string)e.DataObject.GetData(typeof(string));
-                if (_numericRegex.IsMatch(text))
+                var text = (string?)e.DataObject.GetData(typeof(string));
+                if (text == null || _numericRegex.IsMatch(text))
                 {
                     e.CancelCommand();
                 }
@@ -71,22 +74,29 @@ namespace MaDeng
 
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
-            if (int.TryParse(MarqueeOnTime.Text, out var marqueeOn) &&
-                int.TryParse(MarqueeOffTime.Text, out var marqueeOff) &&
-                int.TryParse(BlinkOnTime.Text, out var blinkOn) &&
-                int.TryParse(BlinkOffTime.Text, out var blinkOff))
+            if (!TryParseTiming(MarqueeOnTime.Text, "每个灯亮时间", out var marqueeOn)) return;
+            if (!TryParseTiming(MarqueeOffTime.Text, "循环间隔", out var marqueeOff)) return;
+            if (!TryParseTiming(BlinkOnTime.Text, "亮灯时间", out var blinkOn)) return;
+            if (!TryParseTiming(BlinkOffTime.Text, "灭灯时间", out var blinkOff)) return;
+
+            MarqueeOn = marqueeOn;
+            MarqueeOff = marqueeOff;
+            BlinkOn = blinkOn;
+            BlinkOff = blinkOff;
+            BackgroundOpacity = OpacitySlider.Value;
+            DialogResult = true;
+        }
+
+        private bool TryParseTiming(string? text, string fieldName, out int value)
+        {
+            if (!int.TryParse(text, out value) || value < MinTimingValue || value > MaxTimingValue)
             {
-                MarqueeOn = marqueeOn;
-                MarqueeOff = marqueeOff;
-                BlinkOn = blinkOn;
-                BlinkOff = blinkOff;
-                BackgroundOpacity = OpacitySlider.Value;
-                DialogResult = true;
+                MessageBox.Show(
+                    $"「{fieldName}」请输入 {MinTimingValue} ~ {MaxTimingValue} 之间的数字",
+                    "输入无效", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
             }
-            else
-            {
-                MessageBox.Show("请输入有效的数字", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            return true;
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)

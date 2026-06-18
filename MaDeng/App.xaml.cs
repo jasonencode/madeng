@@ -14,7 +14,11 @@ namespace MaDeng
             DispatcherUnhandledException += (s, args) =>
             {
                 Debug.WriteLine($"Unhandled exception: {args.Exception}");
-                args.Handled = true;
+                // 仅处理非致命异常，严重异常仍然终止
+                if (args.Exception is not (OutOfMemoryException or StackOverflowException or AccessViolationException))
+                {
+                    args.Handled = true;
+                }
             };
 
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
@@ -25,7 +29,6 @@ namespace MaDeng
             TaskScheduler.UnobservedTaskException += (s, args) =>
             {
                 Debug.WriteLine($"Unobserved task exception: {args.Exception}");
-                args.SetObserved();
             };
         }
     }

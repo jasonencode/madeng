@@ -85,7 +85,7 @@ namespace MaDeng
                 "completed" => "Done",
                 "waiting" => "Waiting",
                 "error" => "Error",
-                _ => "Ready"
+                _ => status ?? "Unknown"
             };
         }
 

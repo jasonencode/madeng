@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Windows;
 
 namespace MaDeng
@@ -7,6 +8,8 @@ namespace MaDeng
         public AboutWindow()
         {
             InitializeComponent();
+            var version = Assembly.GetExecutingAssembly().GetName().Version;
+            VersionText.Text = $"v{version?.Major}.{version?.Minor}.{version?.Build}";
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

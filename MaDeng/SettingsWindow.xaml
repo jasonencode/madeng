@@ -11,9 +11,6 @@
 
     <Window.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="Themes/SharedStyles.xaml"/>
-            </ResourceDictionary.MergedDictionaries>
 
             <!-- 输入框样式 -->
         <Style x:Key="InputStyle" TargetType="TextBox">
@@ -140,7 +137,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="背景透明度:" Foreground="#A0A0B0" VerticalAlignment="Center"/>
                 <Slider x:Name="OpacitySlider" Grid.Column="1" Minimum="0.1" Maximum="1" Value="0.6"
-                        TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center"
                         Style="{StaticResource SliderStyle}"/>
                 <TextBlock x:Name="OpacityValue" Grid.Column="2" Text="60%" Foreground="#A0A0B0"
                            VerticalAlignment="Center" TextAlignment="Right"/>

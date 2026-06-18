@@ -14,21 +14,25 @@ namespace MaDeng
         private Ellipse? _ellipse;
         private DispatcherTimer? _animationTimer;
         private double _breathProgress;
-        private int _marqueeIndex;
+        private double _colorProgress;
         private bool _blinkState;
 
-        private static readonly Color GreenOn = Color.FromRgb(0x22, 0xC5, 0x5E);
-        private static readonly Color YellowOn = Color.FromRgb(0xFA, 0xCC, 0x15);
-        private static readonly Color RedOn = Color.FromRgb(0xEF, 0x44, 0x44);
-        private static readonly Color OffColor = Color.FromRgb(0x1A, 0x1A, 0x2E);
+        // 复用的渲染对象，避免每帧 GC 分配
+        private readonly SolidColorBrush _brush = new();
+        private readonly DropShadowEffect _effect = new();
+
+        // 缓存的配置值，避免每帧访问静态属性
+        private double _breathCycleTime;
+        private double _marqueeOnTime;
+        private double _blinkOnTime;
+        private double _blinkOffTime;
+
+        // working 颜色循环周期（秒）
+        private const double ColorCycleTimeSec = 3.0;
 
         public static readonly DependencyProperty StatusProperty =
             DependencyProperty.Register("Status", typeof(string), typeof(StatusLamp),
                 new PropertyMetadata("idle", OnStatusChanged));
-
-        public static readonly DependencyProperty LampIndexProperty =
-            DependencyProperty.Register("LampIndex", typeof(int), typeof(StatusLamp),
-                new PropertyMetadata(0));
 
         static StatusLamp()
         {
@@ -39,6 +43,7 @@ namespace MaDeng
         public StatusLamp()
         {
             Unloaded += (_, _) => StopAnimation();
+            _effect.ShadowDepth = ThemeConstants.ShadowDepth;
         }
 
         public string Status
@@ -47,19 +52,13 @@ namespace MaDeng
             set => SetValue(StatusProperty, value);
         }
 
-        public int LampIndex
-        {
-            get => (int)GetValue(LampIndexProperty);
-            set => SetValue(LampIndexProperty, value);
-        }
-
         private static void OnStatusChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is StatusLamp lamp)
             {
-                lamp._marqueeIndex = 0;
                 lamp._blinkState = true;
                 lamp._breathProgress = 0;
+                lamp._colorProgress = 0;
 
                 if (lamp.Status == "idle")
                 {
@@ -85,39 +84,55 @@ namespace MaDeng
             UpdateDisplay();
         }
 
+        /// <summary>
+        /// 从 AppConfig 缓存配置值，仅在状态变化时调用
+        /// </summary>
+        private void CacheConfig()
+        {
+            var config = AppConfig.Instance;
+            _breathCycleTime = config.BreathCycleTime / 1000.0;
+            _marqueeOnTime = config.MarqueeOnTime / 1000.0;
+            _blinkOnTime = config.BlinkOnTime / 1000.0;
+            _blinkOffTime = config.BlinkOffTime / 1000.0;
+        }
+
         private void StartAnimation()
         {
             _animationTimer?.Stop();
-            _animationTimer = new DispatcherTimer();
-            _animationTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60fps
-            _animationTimer.Tick += (s, e) =>
+            CacheConfig();
+            _animationTimer = new DispatcherTimer
             {
-                var config = AppConfig.Instance;
+                Interval = TimeSpan.FromMilliseconds(ThemeConstants.FrameIntervalMs)
+            };
+            _animationTimer.Tick += (_, _) =>
+            {
+                const double dt = ThemeConstants.FrameIntervalMs / 1000.0;
                 switch (Status)
                 {
                     case "completed":
-                        _breathProgress += 0.016 / (config.BreathCycleTime / 1000.0);
+                        _breathProgress += dt / _breathCycleTime;
                         if (_breathProgress >= 1) _breathProgress = 0;
                         break;
                     case "working":
                     case "busy":
-                        _breathProgress += 0.016 / (config.MarqueeOnTime / 1000.0);
-                        if (_breathProgress >= 1)
-                        {
-                            _breathProgress = 0;
-                            _marqueeIndex = (_marqueeIndex + 1) % 3;
-                        }
+                        _colorProgress += dt / ColorCycleTimeSec;
+                        if (_colorProgress >= 1) _colorProgress = 0;
+                        _breathProgress += dt / _marqueeOnTime;
+                        if (_breathProgress >= 1) _breathProgress = 0;
                         break;
                     case "waiting":
-                        _breathProgress += 0.016 / ((_blinkState ? config.BlinkOnTime : config.BlinkOffTime) / 1000.0);
+                    {
+                        double cycleTime = _blinkState ? _blinkOnTime : _blinkOffTime;
+                        _breathProgress += dt / cycleTime;
                         if (_breathProgress >= 1)
                         {
                             _breathProgress = 0;
                             _blinkState = !_blinkState;
                         }
                         break;
+                    }
                     case "error":
-                        _breathProgress += 0.016 / (AppConfig.Instance.BreathCycleTime / 1000.0);
+                        _breathProgress += dt / _breathCycleTime;
                         if (_breathProgress >= 1) _breathProgress = 0;
                         break;
                 }
@@ -132,6 +147,45 @@ namespace MaDeng
             _animationTimer = null;
         }
 
+        /// <summary>
+        /// 计算呼吸强度：返回 0-1 的平滑正弦值
+        /// </summary>
+        private static double BreathIntensity(double progress)
+        {
+            return (Math.Sin(progress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
+        }
+
+        /// <summary>
+        /// 根据循环进度 (0-1) 返回当前颜色，蓝→青→蓝
+        /// </summary>
+        private (Color onColor, Color glowColor) GetCycleColors(double progress)
+        {
+            double t = progress < 0.5 ? progress * 2 : 2 - progress * 2;
+
+            if (t < 0.5)
+            {
+                // 蓝 → 青
+                double p = t * 2;
+                return (LerpColor(ThemeConstants.BlueOn, ThemeConstants.CyanOn, p),
+                        LerpColor(ThemeConstants.BlueGlow, ThemeConstants.CyanGlow, p));
+            }
+            else
+            {
+                // 青 → 蓝
+                double p = (t - 0.5) * 2;
+                return (LerpColor(ThemeConstants.CyanOn, ThemeConstants.BlueOn, p),
+                        LerpColor(ThemeConstants.CyanGlow, ThemeConstants.BlueGlow, p));
+            }
+        }
+
+        private static Color LerpColor(Color a, Color b, double t)
+        {
+            byte r = (byte)(a.R + (b.R - a.R) * t);
+            byte g = (byte)(a.G + (b.G - a.G) * t);
+            byte bv = (byte)(a.B + (b.B - a.B) * t);
+            return Color.FromRgb(r, g, bv);
+        }
+
         private void UpdateDisplay()
         {
             if (_ellipse == null) return;
@@ -139,97 +193,81 @@ namespace MaDeng
             switch (Status)
             {
                 case "idle":
-                    SetLight(LampIndex == 0);
+                    SetLightOn(ThemeConstants.GreenOn);
                     break;
                 case "completed":
-                    if (LampIndex == 0)
-                    {
-                        double intensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-                        SetLightBreath(GreenOn, intensity);
-                    }
-                    else
-                    {
-                        SetLight(false);
-                    }
+                {
+                    double intensity = BreathIntensity(_breathProgress);
+                    SetLightBreath(ThemeConstants.GreenOn, intensity);
                     break;
+                }
                 case "working":
                 case "busy":
-                    double marqueeIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-                    Color marqueeColor = LampIndex switch
-                    {
-                        0 => GreenOn,
-                        1 => YellowOn,
-                        2 => RedOn,
-                        _ => GreenOn
-                    };
-                    SetLightBreath(marqueeColor, _marqueeIndex == LampIndex ? marqueeIntensity : 0);
+                {
+                    var (onColor, _) = GetCycleColors(_colorProgress);
+                    double intensity = BreathIntensity(_breathProgress);
+                    SetLightBreath(onColor, intensity);
                     break;
+                }
                 case "waiting":
-                    SetLight(_blinkState);
+                    if (_blinkState)
+                        SetLightOn(ThemeConstants.YellowOn);
+                    else
+                        SetLightOff();
                     break;
                 case "error":
-                    if (LampIndex == 2)
-                    {
-                        double errorIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
-                        SetLightBreath(RedOn, errorIntensity);
-                    }
-                    else
-                    {
-                        SetLight(false);
-                    }
+                {
+                    double intensity = BreathIntensity(_breathProgress);
+                    SetLightBreath(ThemeConstants.RedOn, intensity);
                     break;
+                }
             }
         }
 
-        private void SetLight(bool isOn)
+        private void SetLightOn(Color onColor)
         {
             if (_ellipse == null) return;
 
-            if (isOn)
-            {
-                Color onColor = LampIndex switch
-                {
-                    0 => GreenOn,
-                    1 => YellowOn,
-                    2 => RedOn,
-                    _ => GreenOn
-                };
-                _ellipse.Fill = new SolidColorBrush(onColor);
-                _ellipse.Effect = new DropShadowEffect
-                {
-                    Color = onColor,
-                    BlurRadius = 12,
-                    Opacity = 0.6,
-                    ShadowDepth = 0
-                };
-            }
-            else
-            {
-                _ellipse.Fill = new SolidColorBrush(OffColor);
-                _ellipse.Effect = null;
-            }
+            _brush.Color = onColor;
+            _ellipse.Fill = _brush;
+
+            _effect.Color = onColor;
+            _effect.BlurRadius = ThemeConstants.ShadowBlurRadius;
+            _effect.Opacity = ThemeConstants.ShadowOpacity;
+            _ellipse.Effect = _effect;
+        }
+
+        private void SetLightOff()
+        {
+            if (_ellipse == null) return;
+
+            _brush.Color = ThemeConstants.OffColor;
+            _ellipse.Fill = _brush;
+            _ellipse.Effect = null;
         }
 
         private void SetLightBreath(Color onColor, double intensity)
         {
             if (_ellipse == null) return;
 
-            double minBrightness = 0.1;
-            double brightness = minBrightness + (1 - minBrightness) * intensity;
+            double brightness = ThemeConstants.BreathMinBrightness
+                + (1 - ThemeConstants.BreathMinBrightness) * intensity;
 
-            byte r = (byte)(OffColor.R + (onColor.R - OffColor.R) * brightness);
-            byte g = (byte)(OffColor.G + (onColor.G - OffColor.G) * brightness);
-            byte b = (byte)(OffColor.B + (onColor.B - OffColor.B) * brightness);
+            byte r = (byte)(ThemeConstants.OffColor.R + (onColor.R - ThemeConstants.OffColor.R) * brightness);
+            byte g = (byte)(ThemeConstants.OffColor.G + (onColor.G - ThemeConstants.OffColor.G) * brightness);
+            byte b = (byte)(ThemeConstants.OffColor.B + (onColor.B - ThemeConstants.OffColor.B) * brightness);
 
             Color color = Color.FromRgb(r, g, b);
-            _ellipse.Fill = new SolidColorBrush(color);
-            _ellipse.Effect = new DropShadowEffect
-            {
-                Color = color,
-                BlurRadius = 4 + 16 * intensity,
-                Opacity = 0.1 + 0.7 * intensity,
-                ShadowDepth = 0
-            };
+
+            _brush.Color = color;
+            _ellipse.Fill = _brush;
+
+            _effect.Color = color;
+            _effect.BlurRadius = ThemeConstants.BreathMinBlur
+                + (ThemeConstants.BreathMaxBlur - ThemeConstants.BreathMinBlur) * intensity;
+            _effect.Opacity = ThemeConstants.BreathMinOpacity
+                + (ThemeConstants.BreathMaxOpacity - ThemeConstants.BreathMinOpacity) * intensity;
+            _ellipse.Effect = _effect;
         }
     }
 }

@@ -163,14 +163,6 @@ namespace MaDeng
             finally { Interlocked.Exchange(ref _scanning, 0); }
         }
 
-        public List<SessionInfo> GetSessions()
-        {
-            lock (_lock)
-            {
-                return _sessions.Values.ToList();
-            }
-        }
-
         public void Dispose()
         {
             if (_disposed) return;

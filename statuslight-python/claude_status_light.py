@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-StatusLight - 屏幕顶部三色灯状态指示器
+StatusLight - 屏幕顶部单灯状态指示器
 """
 
 import tkinter as tk
@@ -18,6 +18,7 @@ MARQUEE_OFF_TIME = 200
 BLINK_ON_TIME = 600
 BLINK_OFF_TIME = 400
 BREATH_CYCLE_TIME = 3000
+COLOR_CYCLE_TIME = 3000  # working 颜色循环周期
 # ========================================================
 
 
@@ -46,14 +47,14 @@ class StatusLightApp:
         self.root.title("StatusLight")
         self.current_status = Status.IDLE
         self.blink_state = True
-        self.marquee_index = 0
         self.breath_progress = 0.0
+        self.color_progress = 0.0
         self.animation_id: Optional[str] = None
 
-        self.width = 260
+        self.width = 160
         self.height = 52
-        self.light_r = 12
-        self.positions = [60, 100, 140]
+        self.light_r = 15
+        self.light_x = 50
         self.light_y = self.height // 2
 
         self._setup_window()
@@ -148,6 +149,35 @@ class StatusLightApp:
             fill="#FFFFFF", outline="", width=0
         )
 
+    def _get_cycle_colors(self, progress):
+        """根据循环进度 (0-1) 返回当前颜色，绿→黄→红→黄→绿"""
+        green = ("#22C55E", "#16A34A")
+        yellow = ("#FACC15", "#EAB308")
+        red = ("#EF4444", "#DC2626")
+
+        # 三角波: 0→1→0
+        t = progress * 2 if progress < 0.5 else 2 - progress * 2
+
+        if t < 0.5:
+            p = t * 2
+            c = self._lerp_color(green[0], yellow[0], p)
+            g = self._lerp_color(green[1], yellow[1], p)
+        else:
+            p = (t - 0.5) * 2
+            c = self._lerp_color(yellow[0], red[0], p)
+            g = self._lerp_color(yellow[1], red[1], p)
+        return c, g
+
+    @staticmethod
+    def _lerp_color(hex_a, hex_b, t):
+        """在两个十六进制颜色之间线性插值"""
+        ra, ga, ba = int(hex_a[1:3], 16), int(hex_a[3:5], 16), int(hex_a[5:7], 16)
+        rb, gb, bb = int(hex_b[1:3], 16), int(hex_b[3:5], 16), int(hex_b[5:7], 16)
+        r = int(ra + (rb - ra) * t)
+        g = int(ga + (gb - ga) * t)
+        b = int(ba + (bb - ba) * t)
+        return f"#{r:02x}{g:02x}{b:02x}"
+
     def _update_display(self):
         self.canvas.delete("all")
 
@@ -155,52 +185,31 @@ class StatusLightApp:
         self._draw_rounded_rect(4, 4, self.width - 4, self.height - 4, 14,
                                 fill="#1E1E2E", outline="#313244", width=1)
 
-        colors = [
-            ("#22C55E", "#16A34A"),  # 绿
-            ("#FACC15", "#EAB308"),  # 黄
-            ("#EF4444", "#DC2626"),  # 红
-        ]
-
         if self.current_status == Status.IDLE:
-            # 绿灯常亮
-            self._draw_light_on(self.positions[0], self.light_y, self.light_r, *colors[0])
-            self._draw_light_off(self.positions[1], self.light_y, self.light_r)
-            self._draw_light_off(self.positions[2], self.light_y, self.light_r)
+            self._draw_light_on(self.light_x, self.light_y, self.light_r, "#22C55E", "#16A34A")
 
         elif self.current_status == Status.WORKING:
-            # 跑马灯呼吸
+            color, glow = self._get_cycle_colors(self.color_progress)
             intensity = (math.sin(self.breath_progress * 2 * math.pi - math.pi / 2) + 1) / 2
-            for i, (x, (c, g)) in enumerate(zip(self.positions, colors)):
-                if i == self.marquee_index:
-                    self._draw_light_on(x, self.light_y, self.light_r, c, g, intensity)
-                else:
-                    self._draw_light_off(x, self.light_y, self.light_r)
+            self._draw_light_on(self.light_x, self.light_y, self.light_r, color, glow, intensity)
 
         elif self.current_status == Status.COMPLETED:
-            # 绿灯呼吸
             intensity = (math.sin(self.breath_progress * 2 * math.pi - math.pi / 2) + 1) / 2
-            self._draw_light_on(self.positions[0], self.light_y, self.light_r, *colors[0], intensity)
-            self._draw_light_off(self.positions[1], self.light_y, self.light_r)
-            self._draw_light_off(self.positions[2], self.light_y, self.light_r)
+            self._draw_light_on(self.light_x, self.light_y, self.light_r, "#22C55E", "#16A34A", intensity)
 
         elif self.current_status == Status.WAITING:
-            # 三灯闪烁
-            for x, (c, g) in zip(self.positions, colors):
-                if self.blink_state:
-                    self._draw_light_on(x, self.light_y, self.light_r, c, g)
-                else:
-                    self._draw_light_off(x, self.light_y, self.light_r)
+            if self.blink_state:
+                self._draw_light_on(self.light_x, self.light_y, self.light_r, "#FACC15", "#EAB308")
+            else:
+                self._draw_light_off(self.light_x, self.light_y, self.light_r)
 
         elif self.current_status == Status.ERROR:
-            # 红灯呼吸
             intensity = (math.sin(self.breath_progress * 2 * math.pi - math.pi / 2) + 1) / 2
-            self._draw_light_off(self.positions[0], self.light_y, self.light_r)
-            self._draw_light_off(self.positions[1], self.light_y, self.light_r)
-            self._draw_light_on(self.positions[2], self.light_y, self.light_r, *colors[2], intensity)
+            self._draw_light_on(self.light_x, self.light_y, self.light_r, "#EF4444", "#DC2626", intensity)
 
         # 状态文字
         self.canvas.create_text(
-            195, self.light_y,
+            110, self.light_y,
             text=STATUS_NAMES[self.current_status],
             fill="#E0E0E0",
             font=("Segoe UI", 10, "bold"),
@@ -215,10 +224,12 @@ class StatusLightApp:
             dt = 30  # ~33fps
 
             if self.current_status == Status.WORKING:
+                self.color_progress += dt / COLOR_CYCLE_TIME
+                if self.color_progress >= 1:
+                    self.color_progress = 0
                 self.breath_progress += dt / MARQUEE_ON_TIME
                 if self.breath_progress >= 1:
                     self.breath_progress = 0
-                    self.marquee_index = (self.marquee_index + 1) % 3
 
             elif self.current_status == Status.COMPLETED:
                 self.breath_progress += dt / BREATH_CYCLE_TIME
@@ -257,7 +268,7 @@ class StatusLightApp:
         if status != self.current_status:
             self.current_status = status
             self.breath_progress = 0
-            self.marquee_index = 0
+            self.color_progress = 0
             self.blink_state = True
             self._update_display()
 

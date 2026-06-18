@@ -8,7 +8,7 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        Width="260" Height="52"
+        Width="160" Height="52"
         SizeToContent="Manual"
         Loaded="Window_Loaded"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
@@ -33,49 +33,23 @@
             <DropShadowEffect BlurRadius="8" ShadowDepth="2" Color="#000000" Opacity="0.3"/>
         </Border.Effect>
         
-        <StackPanel x:Name="LightsPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,0">
-            <!-- 绿灯 -->
-            <Ellipse x:Name="GreenLightH" Width="24" Height="24" Margin="8,0">
+        <StackPanel x:Name="LightsPanel" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0">
+            <!-- 单灯 -->
+            <Ellipse x:Name="SingleLight" Width="30" Height="30" Margin="0,0,10,0">
                 <Ellipse.Effect>
-                    <DropShadowEffect x:Name="GreenGlowH" BlurRadius="0" ShadowDepth="0" Color="#22C55E" Opacity="0"/>
+                    <DropShadowEffect x:Name="SingleGlow" BlurRadius="0" ShadowDepth="0" Color="#22C55E" Opacity="0"/>
                 </Ellipse.Effect>
                 <Ellipse.Fill>
                     <RadialGradientBrush>
-                        <GradientStop x:Name="GreenInnerH" Color="#1A1A2E" Offset="0"/>
-                        <GradientStop x:Name="GreenOuterH" Color="#1A1A2E" Offset="1"/>
+                        <GradientStop x:Name="SingleInner" Color="#1A1A2E" Offset="0"/>
+                        <GradientStop x:Name="SingleOuter" Color="#1A1A2E" Offset="1"/>
                     </RadialGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
-            
-            <!-- 黄灯 -->
-            <Ellipse x:Name="YellowLightH" Width="24" Height="24" Margin="8,0">
-                <Ellipse.Effect>
-                    <DropShadowEffect x:Name="YellowGlowH" BlurRadius="0" ShadowDepth="0" Color="#FACC15" Opacity="0"/>
-                </Ellipse.Effect>
-                <Ellipse.Fill>
-                    <RadialGradientBrush>
-                        <GradientStop x:Name="YellowInnerH" Color="#1A1A2E" Offset="0"/>
-                        <GradientStop x:Name="YellowOuterH" Color="#1A1A2E" Offset="1"/>
-                    </RadialGradientBrush>
-                </Ellipse.Fill>
-            </Ellipse>
-            
-            <!-- 红灯 -->
-            <Ellipse x:Name="RedLightH" Width="24" Height="24" Margin="8,0">
-                <Ellipse.Effect>
-                    <DropShadowEffect x:Name="RedGlowH" BlurRadius="0" ShadowDepth="0" Color="#EF4444" Opacity="0"/>
-                </Ellipse.Effect>
-                <Ellipse.Fill>
-                    <RadialGradientBrush>
-                        <GradientStop x:Name="RedInnerH" Color="#1A1A2E" Offset="0"/>
-                        <GradientStop x:Name="RedOuterH" Color="#1A1A2E" Offset="1"/>
-                    </RadialGradientBrush>
-                </Ellipse.Fill>
-            </Ellipse>
-            
+
             <!-- 状态文字 -->
-            <TextBlock x:Name="StatusTextH" Text="Ready" Foreground="#E0E0E0" 
-                       FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="16,0,0,0"/>
+            <TextBlock x:Name="StatusTextH" Text="Ready" Foreground="#E0E0E0"
+                       FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,0,0"/>
         </StackPanel>
     </Border>
 </Window>

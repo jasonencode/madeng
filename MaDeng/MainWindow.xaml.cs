@@ -15,7 +15,7 @@ namespace MaDeng
         private readonly SessionWatcher _sessionWatcher;
         private readonly ObservableCollection<SessionViewModel> _sessions = new();
         private readonly Dictionary<string, SessionViewModel> _sessionIndex = new();
-        private AppConfig _config = null!;
+        private AppConfig _config = new();
 
         public MainWindow()
         {
@@ -82,10 +82,7 @@ namespace MaDeng
 
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
-            var settings = new SettingsWindow(
-                _config.MarqueeOnTime, _config.MarqueeOffTime,
-                _config.BlinkOnTime, _config.BlinkOffTime,
-                _config.BackgroundOpacity);
+            var settings = new SettingsWindow(_config);
 
             settings.Owner = this;
             if (settings.ShowDialog() == true)
@@ -121,7 +118,8 @@ namespace MaDeng
         private void ApplyBackgroundOpacity(double opacity)
         {
             var alpha = (byte)(opacity * 255);
-            MainBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, 0x1E, 0x1E, 0x2E));
+            var bgColor = ThemeConstants.BackgroundColor;
+            MainBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, bgColor.R, bgColor.G, bgColor.B));
         }
 
         private void OpenCwd_Click(object sender, RoutedEventArgs e)
