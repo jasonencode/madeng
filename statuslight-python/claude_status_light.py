@@ -192,13 +192,11 @@ class StatusLightApp:
                     self._draw_light_off(x, self.light_y, self.light_r)
 
         elif self.current_status == Status.ERROR:
-            # 红灯闪烁
+            # 红灯呼吸
+            intensity = (math.sin(self.breath_progress * 2 * math.pi - math.pi / 2) + 1) / 2
             self._draw_light_off(self.positions[0], self.light_y, self.light_r)
             self._draw_light_off(self.positions[1], self.light_y, self.light_r)
-            if self.blink_state:
-                self._draw_light_on(self.positions[2], self.light_y, self.light_r, *colors[2])
-            else:
-                self._draw_light_off(self.positions[2], self.light_y, self.light_r)
+            self._draw_light_on(self.positions[2], self.light_y, self.light_r, *colors[2], intensity)
 
         # 状态文字
         self.canvas.create_text(
@@ -234,10 +232,9 @@ class StatusLightApp:
                     self.blink_state = not self.blink_state
 
             elif self.current_status == Status.ERROR:
-                self.breath_progress += dt / (BLINK_ON_TIME if self.blink_state else BLINK_OFF_TIME)
+                self.breath_progress += dt / BREATH_CYCLE_TIME
                 if self.breath_progress >= 1:
                     self.breath_progress = 0
-                    self.blink_state = not self.blink_state
 
             self._update_display()
             self.animation_id = self.root.after(dt, animate)

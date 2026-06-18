@@ -26,7 +26,7 @@
             
             <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,16">
                 <TextBlock Text="StatusLight" FontSize="20" FontWeight="Bold" Foreground="#E0E0E0" HorizontalAlignment="Center"/>
-                <TextBlock Text="v1.2.0" FontSize="12" Foreground="#888" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                <TextBlock Text="v1.3.0" FontSize="12" Foreground="#888" HorizontalAlignment="Center" Margin="0,4,0,0"/>
             </StackPanel>
             
             <TextBlock Grid.Row="1" TextWrapping="Wrap" Foreground="#A0A0B0" FontSize="12" Margin="0,0,0,16">

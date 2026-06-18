@@ -1,4 +1,4 @@
-# StatusLight v1.2.0
+# StatusLight v1.3.0
 
 屏幕顶部状态指示灯，配合 Claude Code 使用。
 
