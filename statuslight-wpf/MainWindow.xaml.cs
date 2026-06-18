@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -17,8 +19,21 @@ namespace StatusLight
 
     public partial class MainWindow : Window
     {
-        private AppConfig _config;
+        private const int AnimationIntervalMs = 30;
+
+        // Win32 API
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
         
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        
+        private const int SW_RESTORE = 9;
+
+        private AppConfig _config = null!;
+        private string? _terminalProgram;
+        private int? _parentProcessId;
+
         private Status _currentStatus = Status.Idle;
         private int _marqueeIndex = 0;
         private bool _blinkState = true;
@@ -48,10 +63,125 @@ namespace StatusLight
             Width = 260;
             Height = 52;
             
+            // 检测终端环境
+            DetectTerminal();
+            
             ResetPosition();
             StartHttpServer();
             StartAnimation();
             UpdateDisplay();
+        }
+
+        private void DetectTerminal()
+        {
+            _terminalProgram = Environment.GetEnvironmentVariable("TERM_PROGRAM");
+            var ppid = Environment.GetEnvironmentVariable("PPID");
+            
+            if (int.TryParse(ppid, out var pid))
+            {
+                _parentProcessId = pid;
+            }
+            
+            // 如果没有 PPID，尝试获取父进程
+            if (_parentProcessId == null)
+            {
+                try
+                {
+                    using var currentProcess = Process.GetCurrentProcess();
+                    _parentProcessId = GetParentProcessId(currentProcess.Id);
+                }
+                catch { }
+            }
+        }
+
+        private int? GetParentProcessId(int processId)
+        {
+            try
+            {
+                using var process = Process.GetProcessById(processId);
+                var pbi = new PROCESS_BASIC_INFORMATION();
+                int returnLength;
+                
+                if (NtQueryInformationProcess(process.Handle, 0, ref pbi, Marshal.SizeOf(pbi), out returnLength) == 0)
+                {
+                    return (int)pbi.InheritedFromUniqueProcessId;
+                }
+            }
+            catch { }
+            return null;
+        }
+
+        [DllImport("ntdll.dll")]
+        private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass, ref PROCESS_BASIC_INFORMATION processInformation, int processInformationLength, out int returnLength);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct PROCESS_BASIC_INFORMATION
+        {
+            public IntPtr Reserved1;
+            public IntPtr PebBaseAddress;
+            public IntPtr Reserved2_0;
+            public IntPtr Reserved2_1;
+            public IntPtr UniqueProcessId;
+            public IntPtr InheritedFromUniqueProcessId;
+        }
+
+        private void SwitchToTerminal()
+        {
+            try
+            {
+                // 优先使用 PPID 找到父进程
+                if (_parentProcessId != null)
+                {
+                    try
+                    {
+                        var parentProcess = Process.GetProcessById(_parentProcessId.Value);
+                        SetForegroundWindow(parentProcess.MainWindowHandle);
+                        ShowWindow(parentProcess.MainWindowHandle, SW_RESTORE);
+                        return;
+                    }
+                    catch { }
+                }
+
+                // 根据 TERM_PROGRAM 查找进程
+                if (!string.IsNullOrEmpty(_terminalProgram))
+                {
+                    var processName = _terminalProgram.ToLower() switch
+                    {
+                        "vscode" => "Code",
+                        "wt" => "WindowsTerminal",
+                        "hyper" => "Hyper",
+                        "jetbrains" => "idea64",
+                        _ => null
+                    };
+
+                    if (processName != null)
+                    {
+                        var processes = Process.GetProcessesByName(processName);
+                        if (processes.Length > 0)
+                        {
+                            SetForegroundWindow(processes[0].MainWindowHandle);
+                            ShowWindow(processes[0].MainWindowHandle, SW_RESTORE);
+                            return;
+                        }
+                    }
+                }
+
+                // 默认切换到 cmd 或 powershell
+                var cmdProcess = Process.GetProcessesByName("cmd")
+                    .Concat(Process.GetProcessesByName("powershell"))
+                    .Concat(Process.GetProcessesByName("WindowsTerminal"))
+                    .FirstOrDefault();
+
+                if (cmdProcess != null)
+                {
+                    SetForegroundWindow(cmdProcess.MainWindowHandle);
+                    ShowWindow(cmdProcess.MainWindowHandle, SW_RESTORE);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"无法切换窗口: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void ResetPosition()
@@ -78,21 +208,23 @@ namespace StatusLight
                         _ = Task.Run(() => HandleRequest(context));
                     }
                 }
-                catch (Exception) { }
+                catch (ObjectDisposedException) { }
+                catch (HttpListenerException) { }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"HTTP server error: {ex.Message}"); }
             }, _cts.Token);
         }
 
         private void StopHttpServer()
         {
             _cts?.Cancel();
-            try { _httpListener?.Stop(); } catch { }
-            try { _httpListener?.Close(); } catch { }
+            try { _httpListener?.Stop(); } catch (ObjectDisposedException) { }
+            try { _httpListener?.Close(); } catch (ObjectDisposedException) { }
         }
 
-        private void RestartHttpServer()
+        private async void RestartHttpServer()
         {
             StopHttpServer();
-            Thread.Sleep(100);
+            await Task.Delay(100);
             StartHttpServer();
         }
 
@@ -140,7 +272,7 @@ namespace StatusLight
                     context.Response.OutputStream.Write(buffer, 0, buffer.Length);
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"HandleRequest error: {ex.Message}"); }
             finally
             {
                 try { context.Response.Close(); } catch { }
@@ -152,6 +284,8 @@ namespace StatusLight
             if (_currentStatus != status)
             {
                 _currentStatus = status;
+                _marqueeIndex = 0;
+                _blinkState = true;
                 _breathProgress = 0;
                 StartAnimation();
                 UpdateDisplay();
@@ -163,18 +297,18 @@ namespace StatusLight
             _animationTimer?.Stop();
 
             _animationTimer = new DispatcherTimer();
-            _animationTimer.Interval = TimeSpan.FromMilliseconds(30);
+            _animationTimer.Interval = TimeSpan.FromMilliseconds(AnimationIntervalMs);
             _animationTimer.Tick += (s, e) =>
             {
                 switch (_currentStatus)
                 {
                     case Status.Completed:
-                        _breathProgress += 30.0 / _config.BreathCycleTime;
+                        _breathProgress += (double)AnimationIntervalMs / _config.BreathCycleTime;
                         if (_breathProgress >= 1) _breathProgress = 0;
                         break;
 
                     case Status.Working:
-                        _breathProgress += 30.0 / _config.MarqueeOnTime;
+                        _breathProgress += (double)AnimationIntervalMs / _config.MarqueeOnTime;
                         if (_breathProgress >= 1)
                         {
                             _breathProgress = 0;
@@ -183,7 +317,7 @@ namespace StatusLight
                         break;
 
                     case Status.Waiting:
-                        _breathProgress += 30.0 / (_blinkState ? _config.BlinkOnTime : _config.BlinkOffTime);
+                        _breathProgress += (double)AnimationIntervalMs / (_blinkState ? _config.BlinkOnTime : _config.BlinkOffTime);
                         if (_breathProgress >= 1)
                         {
                             _breathProgress = 0;
@@ -192,12 +326,8 @@ namespace StatusLight
                         break;
 
                     case Status.Error:
-                        _breathProgress += 30.0 / (_blinkState ? _config.BlinkOnTime : _config.BlinkOffTime);
-                        if (_breathProgress >= 1)
-                        {
-                            _breathProgress = 0;
-                            _blinkState = !_blinkState;
-                        }
+                        _breathProgress += (double)AnimationIntervalMs / _config.BreathCycleTime;
+                        if (_breathProgress >= 1) _breathProgress = 0;
                         break;
                 }
                 UpdateDisplay();
@@ -241,16 +371,16 @@ namespace StatusLight
                     break;
 
                 case Status.Error:
+                    double errorIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
                     SetLight(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, false);
                     SetLight(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
-                    SetLight(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, _blinkState);
+                    SetLightBreath(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, errorIntensity);
                     StatusTextH.Text = "Error";
                     break;
             }
         }
 
-        private void SetLight(System.Windows.Shapes.Ellipse light,
-            GradientStop inner, GradientStop outer,
+        private void SetLight(System.Windows.Shapes.Ellipse light, GradientStop inner, GradientStop outer,
             System.Windows.Media.Effects.DropShadowEffect glow,
             Color onColor, Color glowColor, bool isOn)
         {
@@ -271,8 +401,7 @@ namespace StatusLight
             }
         }
 
-        private void SetLightBreath(System.Windows.Shapes.Ellipse light,
-            GradientStop inner, GradientStop outer,
+        private void SetLightBreath(System.Windows.Shapes.Ellipse light, GradientStop inner, GradientStop outer,
             System.Windows.Media.Effects.DropShadowEffect glow,
             Color onColor, Color glowColor, double intensity)
         {
@@ -296,7 +425,15 @@ namespace StatusLight
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            DragMove();
+            if (e.ClickCount == 1)
+            {
+                DragMove();
+            }
+        }
+
+        private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            SwitchToTerminal();
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)
