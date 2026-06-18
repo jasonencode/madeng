@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """
-Claude Code Status Light - 屏幕顶部三色灯状态指示器
+StatusLight - 屏幕顶部三色灯状态指示器
 """
 
 import tkinter as tk
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 import threading
+import math
 from enum import Enum
 from typing import Optional
 
 
 # ==================== 时间配置（毫秒）====================
-MARQUEE_ON_TIME = 500     # 跑马灯每个灯亮的时间
-MARQUEE_OFF_TIME = 200    # 跑马灯循环一圈后的间隔
-BLINK_ON_TIME = 600       # 闪烁时亮的时间
-BLINK_OFF_TIME = 400      # 闪烁时灭的时间
+MARQUEE_ON_TIME = 500
+MARQUEE_OFF_TIME = 200
+BLINK_ON_TIME = 600
+BLINK_OFF_TIME = 400
+BREATH_CYCLE_TIME = 3000
 # ========================================================
 
 
@@ -24,19 +26,15 @@ class Status(Enum):
     WORKING = "working"
     WAITING = "waiting"
     ERROR = "error"
+    COMPLETED = "completed"
 
 
-LIGHT_COLORS = {
-    "green": {"color": "#22C55E", "glow": "#16A34A", "highlight": "#4ADE80"},
-    "yellow": {"color": "#FACC15", "glow": "#EAB308", "highlight": "#FDE047"},
-    "red": {"color": "#EF4444", "glow": "#DC2626", "highlight": "#F87171"},
-}
-
-STATUS_CONFIG = {
-    Status.IDLE: {"name": "Ready"},
-    Status.WORKING: {"name": "Working"},
-    Status.WAITING: {"name": "Waiting"},
-    Status.ERROR: {"name": "Error"},
+STATUS_NAMES = {
+    Status.IDLE: "Ready",
+    Status.WORKING: "Working",
+    Status.WAITING: "Waiting",
+    Status.ERROR: "Error",
+    Status.COMPLETED: "Done",
 }
 
 TRANSPARENT_COLOR = "#FF00FF"
@@ -45,16 +43,17 @@ TRANSPARENT_COLOR = "#FF00FF"
 class StatusLightApp:
     def __init__(self):
         self.root = tk.Tk()
-        self.root.title("Claude Status")
+        self.root.title("StatusLight")
         self.current_status = Status.IDLE
         self.blink_state = True
         self.marquee_index = 0
+        self.breath_progress = 0.0
         self.animation_id: Optional[str] = None
 
-        self.width = 240
-        self.height = 44
-        self.light_r = 8
-        self.positions = [40, 70, 100]
+        self.width = 260
+        self.height = 52
+        self.light_r = 12
+        self.positions = [60, 100, 140]
         self.light_y = self.height // 2
 
         self._setup_window()
@@ -102,75 +101,106 @@ class StatusLightApp:
         ]
         return self.canvas.create_polygon(points, smooth=True, **kwargs)
 
-    def _draw_light(self, cx, cy, radius, color_key, is_active):
-        if not is_active:
-            self.canvas.create_oval(
-                cx - radius, cy - radius, cx + radius, cy + radius,
-                fill="#1A1A2E", outline="#2A2A3C", width=1
-            )
-            return
-
-        config = LIGHT_COLORS[color_key]
-        color = config["color"]
-        glow = config["glow"]
-        highlight = config["highlight"]
-
-        glow_r = radius + 3
-        self.canvas.create_oval(
-            cx - glow_r, cy - glow_r, cx + glow_r, cy + glow_r,
-            fill="", outline=glow, width=1
-        )
+    def _draw_light_off(self, cx, cy, radius):
         self.canvas.create_oval(
             cx - radius, cy - radius, cx + radius, cy + radius,
-            fill=glow, outline=""
+            fill="#1A1A2E", outline="#2A2A3C", width=1
+        )
+
+    def _draw_light_on(self, cx, cy, radius, color, glow_color, intensity=1.0):
+        """绘制亮灯，支持呼吸效果 intensity 0-1"""
+        # 混合颜色
+        off_color = (0x1A, 0x1A, 0x2E)
+        on_color = tuple(int(color[i:i+2], 16) for i in (1, 3, 5))
+        glow_tuple = tuple(int(glow_color[i:i+2], 16) for i in (1, 3, 5))
+
+        r = int(off_color[0] + (on_color[0] - off_color[0]) * intensity)
+        g = int(off_color[1] + (on_color[1] - off_color[1]) * intensity)
+        b = int(off_color[2] + (on_color[2] - off_color[2]) * intensity)
+
+        gr = int(off_color[0] + (glow_tuple[0] - off_color[0]) * intensity)
+        gg = int(off_color[1] + (glow_tuple[1] - off_color[1]) * intensity)
+        gb = int(off_color[2] + (glow_tuple[2] - off_color[2]) * intensity)
+
+        color_hex = f"#{r:02x}{g:02x}{b:02x}"
+        glow_hex = f"#{gr:02x}{gg:02x}{gb:02x}"
+
+        # 光晕
+        glow_r = radius + int(3 * intensity)
+        self.canvas.create_oval(
+            cx - glow_r, cy - glow_r, cx + glow_r, cy + glow_r,
+            fill="", outline=glow_hex, width=2
+        )
+        # 主体
+        self.canvas.create_oval(
+            cx - radius, cy - radius, cx + radius, cy + radius,
+            fill=glow_hex, outline=""
         )
         self.canvas.create_oval(
             cx - radius + 1, cy - radius + 1, cx + radius - 1, cy + radius - 1,
-            fill=color, outline=""
+            fill=color_hex, outline=""
         )
-        highlight_r = radius * 0.5
+        # 高光
+        highlight_r = int(radius * 0.5 * intensity)
         self.canvas.create_oval(
-            cx - highlight_r, cy - highlight_r - 1,
-            cx + highlight_r, cy + highlight_r - 1,
-            fill=highlight, outline=""
-        )
-        spot_r = radius * 0.2
-        spot_cy = cy - radius * 0.2
-        self.canvas.create_oval(
-            cx - spot_r, spot_cy - spot_r, cx + spot_r, spot_cy + spot_r,
-            fill="#FFFFFF", outline=""
+            cx - highlight_r, cy - highlight_r - 2,
+            cx + highlight_r, cy + highlight_r - 2,
+            fill="#FFFFFF", outline="", width=0
         )
 
     def _update_display(self):
         self.canvas.delete("all")
 
-        config = STATUS_CONFIG[self.current_status]
-
-        self._draw_rounded_rect(2, 2, self.width - 2, self.height - 2, 12,
+        # 背景
+        self._draw_rounded_rect(4, 4, self.width - 4, self.height - 4, 14,
                                 fill="#1E1E2E", outline="#313244", width=1)
 
-        color_keys = ["green", "yellow", "red"]
+        colors = [
+            ("#22C55E", "#16A34A"),  # 绿
+            ("#FACC15", "#EAB308"),  # 黄
+            ("#EF4444", "#DC2626"),  # 红
+        ]
 
         if self.current_status == Status.IDLE:
-            for i, x in enumerate(self.positions):
-                self._draw_light(x, self.light_y, self.light_r, color_keys[i], i == 0)
+            # 绿灯常亮
+            self._draw_light_on(self.positions[0], self.light_y, self.light_r, *colors[0])
+            self._draw_light_off(self.positions[1], self.light_y, self.light_r)
+            self._draw_light_off(self.positions[2], self.light_y, self.light_r)
 
         elif self.current_status == Status.WORKING:
-            for i, x in enumerate(self.positions):
-                is_active = (i == self.marquee_index)
-                self._draw_light(x, self.light_y, self.light_r, color_keys[i], is_active)
+            # 跑马灯呼吸
+            intensity = (math.sin(self.breath_progress * 2 * math.pi - math.pi / 2) + 1) / 2
+            for i, (x, (c, g)) in enumerate(zip(self.positions, colors)):
+                if i == self.marquee_index:
+                    self._draw_light_on(x, self.light_y, self.light_r, c, g, intensity)
+                else:
+                    self._draw_light_off(x, self.light_y, self.light_r)
+
+        elif self.current_status == Status.COMPLETED:
+            # 绿灯呼吸
+            intensity = (math.sin(self.breath_progress * 2 * math.pi - math.pi / 2) + 1) / 2
+            self._draw_light_on(self.positions[0], self.light_y, self.light_r, *colors[0], intensity)
+            self._draw_light_off(self.positions[1], self.light_y, self.light_r)
+            self._draw_light_off(self.positions[2], self.light_y, self.light_r)
 
         elif self.current_status == Status.WAITING:
-            for i, x in enumerate(self.positions):
-                self._draw_light(x, self.light_y, self.light_r, color_keys[i], self.blink_state)
+            # 三灯闪烁
+            for x, (c, g) in zip(self.positions, colors):
+                if self.blink_state:
+                    self._draw_light_on(x, self.light_y, self.light_r, c, g)
+                else:
+                    self._draw_light_off(x, self.light_y, self.light_r)
 
         elif self.current_status == Status.ERROR:
-            for i, x in enumerate(self.positions):
-                self._draw_light(x, self.light_y, self.light_r, color_keys[i], i == 2)
+            # 红灯常亮
+            self._draw_light_off(self.positions[0], self.light_y, self.light_r)
+            self._draw_light_off(self.positions[1], self.light_y, self.light_r)
+            self._draw_light_on(self.positions[2], self.light_y, self.light_r, *colors[2])
 
+        # 状态文字
         self.canvas.create_text(
-            155, self.light_y,
-            text=config["name"],
+            195, self.light_y,
+            text=STATUS_NAMES[self.current_status],
             fill="#E0E0E0",
             font=("Segoe UI", 10, "bold"),
             anchor="center"
@@ -181,22 +211,27 @@ class StatusLightApp:
             self.root.after_cancel(self.animation_id)
 
         def animate():
+            dt = 30  # ~33fps
+
             if self.current_status == Status.WORKING:
-                self.marquee_index = (self.marquee_index + 1) % 3
-                self._update_display()
-                delay = MARQUEE_ON_TIME
-                if self.marquee_index == 0:
-                    delay += MARQUEE_OFF_TIME
-                self.animation_id = self.root.after(delay, animate)
+                self.breath_progress += dt / MARQUEE_ON_TIME
+                if self.breath_progress >= 1:
+                    self.breath_progress = 0
+                    self.marquee_index = (self.marquee_index + 1) % 3
+
+            elif self.current_status == Status.COMPLETED:
+                self.breath_progress += dt / BREATH_CYCLE_TIME
+                if self.breath_progress >= 1:
+                    self.breath_progress = 0
+
             elif self.current_status == Status.WAITING:
-                self.blink_state = not self.blink_state
-                self._update_display()
-                delay = BLINK_ON_TIME if self.blink_state else BLINK_OFF_TIME
-                self.animation_id = self.root.after(delay, animate)
-            else:
-                self.marquee_index = 0
-                self.blink_state = True
-                self.animation_id = None
+                self.breath_progress += dt / (BLINK_ON_TIME if self.blink_state else BLINK_OFF_TIME)
+                if self.breath_progress >= 1:
+                    self.breath_progress = 0
+                    self.blink_state = not self.blink_state
+
+            self._update_display()
+            self.animation_id = self.root.after(dt, animate)
 
         animate()
 
@@ -215,7 +250,9 @@ class StatusLightApp:
     def set_status(self, status: Status):
         if status != self.current_status:
             self.current_status = status
-            self._start_animation()
+            self.breath_progress = 0
+            self.marquee_index = 0
+            self.blink_state = True
             self._update_display()
 
     def _start_http_server(self):
@@ -229,8 +266,11 @@ class StatusLightApp:
                     data = json.loads(body)
                     status_str = data.get('status', 'idle')
                     status_map = {
-                        'idle': Status.IDLE, 'working': Status.WORKING,
-                        'waiting': Status.WAITING, 'error': Status.ERROR,
+                        'idle': Status.IDLE,
+                        'working': Status.WORKING,
+                        'waiting': Status.WAITING,
+                        'error': Status.ERROR,
+                        'completed': Status.COMPLETED,
                     }
                     status = status_map.get(status_str, Status.IDLE)
                     app.root.after(0, app.set_status, status)
@@ -257,6 +297,7 @@ class StatusLightApp:
 
         def run_server():
             server = HTTPServer(('127.0.0.1', 51234), Handler)
+            print("StatusLight HTTP Server running on http://127.0.0.1:51234")
             server.serve_forever()
 
         threading.Thread(target=run_server, daemon=True).start()
