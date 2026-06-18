@@ -1,12 +1,13 @@
-# NM-Light (StatusLight)
+# MD-Light 码灯 （牛马指示灯）
 
-屏幕顶部状态指示灯，配合 Claude Code 使用。
+屏幕顶部状态指示灯，配合 Claude Code 使用。如果想扩展其他的AGENT也没问题，就是一个http的服务器，控制灯的状态而已。
 
 ## 项目结构
 
 ```
-├── claude-status-light-wpf/   # WPF 版本 (Windows)
-└── claude-status-light/       # Python 版本 (跨平台)
+├── statuslight-wpf/       # WPF 版本 (Windows)
+├── statuslight-python/    # Python 版本 (跨平台)
+└── statuslight-go/        # Go 版本 (跨平台)
 ```
 
 ## 状态说明
@@ -34,7 +35,7 @@
 ### WPF 版本
 
 ```bash
-cd claude-status-light-wpf
+cd statuslight-wpf
 
 # 编译运行
 dotnet build StatusLight.csproj -c Release
@@ -47,7 +48,7 @@ dotnet publish StatusLight.csproj -c Release -r win-x64 --self-contained true -p
 ### Python 版本
 
 ```bash
-cd claude-status-light
+cd statuslight-python
 
 # 安装依赖
 pip install -r requirements.txt

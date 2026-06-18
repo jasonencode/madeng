@@ -190,6 +190,15 @@ namespace StatusLight
                             _blinkState = !_blinkState;
                         }
                         break;
+
+                    case Status.Error:
+                        _breathProgress += 30.0 / (_blinkState ? _config.BlinkOnTime : _config.BlinkOffTime);
+                        if (_breathProgress >= 1)
+                        {
+                            _breathProgress = 0;
+                            _blinkState = !_blinkState;
+                        }
+                        break;
                 }
                 UpdateDisplay();
             };
@@ -234,7 +243,7 @@ namespace StatusLight
                 case Status.Error:
                     SetLight(GreenLightH, GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, false);
                     SetLight(YellowLightH, YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, false);
-                    SetLight(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, true);
+                    SetLight(RedLightH, RedInnerH, RedOuterH, RedGlowH, _redOn, _redGlow, _blinkState);
                     StatusTextH.Text = "Error";
                     break;
             }
