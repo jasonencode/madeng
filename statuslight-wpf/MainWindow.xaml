@@ -11,8 +11,7 @@
         Width="260" Height="52"
         SizeToContent="Manual"
         Loaded="Window_Loaded"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown"
-        MouseDoubleClick="Window_MouseDoubleClick">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
     
     <Window.ContextMenu>
         <ContextMenu>

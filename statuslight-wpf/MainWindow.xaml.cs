@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -21,18 +20,7 @@ namespace StatusLight
     {
         private const int AnimationIntervalMs = 30;
 
-        // Win32 API
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll")]
-        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-        private const int SW_RESTORE = 9;
-
         private AppConfig _config = null!;
-        private string? _terminalProgram;
-        private int? _parentProcessId;
 
         private Status _currentStatus = Status.Idle;
         private int _marqueeIndex = 0;
@@ -63,119 +51,10 @@ namespace StatusLight
             Width = 260;
             Height = 52;
 
-            DetectTerminal();
             ResetPosition();
             StartHttpServer();
             StartAnimation();
             UpdateDisplay();
-        }
-
-        private void DetectTerminal()
-        {
-            _terminalProgram = Environment.GetEnvironmentVariable("TERM_PROGRAM");
-            var ppid = Environment.GetEnvironmentVariable("PPID");
-
-            if (int.TryParse(ppid, out var pid))
-            {
-                _parentProcessId = pid;
-            }
-
-            if (_parentProcessId == null)
-            {
-                try
-                {
-                    using var currentProcess = Process.GetCurrentProcess();
-                    _parentProcessId = GetParentProcessId(currentProcess.Id);
-                }
-                catch { }
-            }
-        }
-
-        private int? GetParentProcessId(int processId)
-        {
-            try
-            {
-                using var process = Process.GetProcessById(processId);
-                var pbi = new PROCESS_BASIC_INFORMATION();
-                int returnLength;
-
-                if (NtQueryInformationProcess(process.Handle, 0, ref pbi, Marshal.SizeOf(pbi), out returnLength) == 0)
-                {
-                    return (int)pbi.InheritedFromUniqueProcessId;
-                }
-            }
-            catch { }
-            return null;
-        }
-
-        [DllImport("ntdll.dll")]
-        private static extern int NtQueryInformationProcess(IntPtr processHandle, int processInformationClass, ref PROCESS_BASIC_INFORMATION processInformation, int processInformationLength, out int returnLength);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct PROCESS_BASIC_INFORMATION
-        {
-            public IntPtr Reserved1;
-            public IntPtr PebBaseAddress;
-            public IntPtr Reserved2_0;
-            public IntPtr Reserved2_1;
-            public IntPtr UniqueProcessId;
-            public IntPtr InheritedFromUniqueProcessId;
-        }
-
-        private void SwitchToTerminal()
-        {
-            try
-            {
-                if (_parentProcessId != null)
-                {
-                    try
-                    {
-                        var parentProcess = Process.GetProcessById(_parentProcessId.Value);
-                        SetForegroundWindow(parentProcess.MainWindowHandle);
-                        ShowWindow(parentProcess.MainWindowHandle, SW_RESTORE);
-                        return;
-                    }
-                    catch { }
-                }
-
-                if (!string.IsNullOrEmpty(_terminalProgram))
-                {
-                    var processName = _terminalProgram.ToLower() switch
-                    {
-                        "vscode" => "Code",
-                        "wt" => "WindowsTerminal",
-                        "hyper" => "Hyper",
-                        "jetbrains" => "idea64",
-                        _ => null
-                    };
-
-                    if (processName != null)
-                    {
-                        var processes = Process.GetProcessesByName(processName);
-                        if (processes.Length > 0)
-                        {
-                            SetForegroundWindow(processes[0].MainWindowHandle);
-                            ShowWindow(processes[0].MainWindowHandle, SW_RESTORE);
-                            return;
-                        }
-                    }
-                }
-
-                var cmdProcess = Process.GetProcessesByName("cmd")
-                    .Concat(Process.GetProcessesByName("powershell"))
-                    .Concat(Process.GetProcessesByName("WindowsTerminal"))
-                    .FirstOrDefault();
-
-                if (cmdProcess != null)
-                {
-                    SetForegroundWindow(cmdProcess.MainWindowHandle);
-                    ShowWindow(cmdProcess.MainWindowHandle, SW_RESTORE);
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"无法切换窗口: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Warning);
-            }
         }
 
         private void ResetPosition()
@@ -254,25 +133,6 @@ namespace StatusLight
                             "completed" => Status.Completed,
                             _ => Status.Idle
                         };
-
-                        // 从 hook 获取终端信息
-                        if (data.TryGetProperty("terminal", out var terminalProp))
-                        {
-                            var terminal = terminalProp.GetString();
-                            if (!string.IsNullOrEmpty(terminal))
-                            {
-                                _terminalProgram = terminal;
-                            }
-                        }
-
-                        if (data.TryGetProperty("ppid", out var ppidProp))
-                        {
-                            var ppidStr = ppidProp.GetString();
-                            if (int.TryParse(ppidStr, out var ppid) && ppid > 0)
-                            {
-                                _parentProcessId = ppid;
-                            }
-                        }
 
                         Dispatcher.Invoke(() => SetStatus(status));
                     }
@@ -368,7 +228,6 @@ namespace StatusLight
                     break;
 
                 case Status.Working:
-                    // 跑马灯 + 呼吸效果
                     double marqueeIntensity = (Math.Sin(_breathProgress * 2 * Math.PI - Math.PI / 2) + 1) / 2;
                     SetLightBreath(GreenInnerH, GreenOuterH, GreenGlowH, _greenOn, _greenGlow, _marqueeIndex == 0 ? marqueeIntensity : 0);
                     SetLightBreath(YellowInnerH, YellowOuterH, YellowGlowH, _yellowOn, _yellowGlow, _marqueeIndex == 1 ? marqueeIntensity : 0);
@@ -438,15 +297,7 @@ namespace StatusLight
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (e.ClickCount == 1)
-            {
-                DragMove();
-            }
-        }
-
-        private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            SwitchToTerminal();
+            DragMove();
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)
