@@ -45,14 +45,15 @@ dotnet publish MaDeng.csproj -c Release -r win-x64 --self-contained true -p:Publ
 MaDeng 通过 `FileSystemWatcher` 监听 `~/.claude/sessions/*.json` 文件变化，无需配置 HTTP 服务器或 Hooks。Claude Code 自身会将会话信息写入该目录，MaDeng 自动读取并展示。
 
 每个会话显示：
+- **Agent 名称** — 从 sessions 目录的父文件夹名推导（如 `~/.claude/` → Claude）
 - **PID** — 进程 ID
 - **三色灯** — 绿/黄/红，对应不同状态的动画效果
 - **状态文本** — Ready / Working / Done / Waiting / Error
-- **工作目录** — 当前会话的工作路径
+- **打开目录** — 点击文件夹图标可直接打开工作目录
 
 ## 配置
 
-设置通过右键菜单 → 设置 打开，保存在 `settings.json`：
+设置通过右键菜单 → 设置 打开，保存在 `settings.json`，修改后立即生效（无需重启）：
 
 ```json
 {
