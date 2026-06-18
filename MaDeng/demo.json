@@ -1,0 +1,14 @@
+{
+  "pid": 30348,
+  "sessionId": "d94fb84a-8f51-489b-b081-84cd936cd1fe",
+  "cwd": "D:\\Develops\\VibeCoding",
+  "startedAt": 1781765813353,
+  "procStart": "639173914127792980",
+  "version": "2.1.181",
+  "peerProtocol": 1,
+  "kind": "interactive",
+  "entrypoint": "cli",
+  "status": "busy",
+  "updatedAt": 1781767857150,
+  "statusUpdatedAt": 1781767857150
+}
