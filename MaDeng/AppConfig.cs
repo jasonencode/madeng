@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 
 namespace MaDeng
@@ -31,7 +32,7 @@ namespace MaDeng
                     return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
                 }
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"AppConfig.Load error: {ex.Message}"); }
             return new AppConfig();
         }
 
@@ -42,7 +43,7 @@ namespace MaDeng
                 var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(ConfigPath, json);
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"AppConfig.Save error: {ex.Message}"); }
         }
     }
 }

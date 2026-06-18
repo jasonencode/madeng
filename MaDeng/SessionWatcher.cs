@@ -28,6 +28,8 @@ namespace MaDeng
         private CancellationTokenSource? _cts;
         private readonly Dictionary<string, SessionInfo> _sessions = new();
         private readonly object _lock = new();
+        private bool _disposed;
+        private DateTime _lastScan = DateTime.MinValue;
 
         public event Action<List<SessionInfo>>? SessionsChanged;
 
@@ -79,28 +81,37 @@ namespace MaDeng
 
         private void OnFileChanged(object sender, FileSystemEventArgs e)
         {
-            Task.Delay(100, _cts?.Token ?? CancellationToken.None).ContinueWith(_ => ScanSessions());
+            Task.Delay(150, _cts?.Token ?? CancellationToken.None).ContinueWith(_ =>
+            {
+                if (_disposed) return;
+                var now = DateTime.UtcNow;
+                if ((now - _lastScan).TotalMilliseconds < 100) return;
+                _lastScan = now;
+                ScanSessions();
+            });
         }
 
         private void ScanSessions()
         {
+            if (_disposed) return;
             try
             {
                 var files = Directory.GetFiles(_sessionsDir, "*.json");
                 var currentSessions = new Dictionary<string, SessionInfo>();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
                 foreach (var file in files)
                 {
                     try
                     {
                         var json = File.ReadAllText(file);
-                        var session = JsonSerializer.Deserialize<SessionInfo>(json);
+                        var session = JsonSerializer.Deserialize<SessionInfo>(json, options);
                         if (session != null && !string.IsNullOrEmpty(session.SessionId))
                         {
                             currentSessions[session.SessionId] = session;
                         }
                     }
-                    catch { }
+                    catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Session parse error: {ex.Message}"); }
                 }
 
                 List<SessionInfo> sessionsList;
@@ -117,7 +128,7 @@ namespace MaDeng
 
                 SessionsChanged?.Invoke(sessionsList);
             }
-            catch { }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"ScanSessions error: {ex.Message}"); }
         }
 
         public List<SessionInfo> GetSessions()
@@ -130,6 +141,8 @@ namespace MaDeng
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
             Stop();
             _cts?.Dispose();
         }
